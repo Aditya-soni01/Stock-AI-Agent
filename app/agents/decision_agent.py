@@ -1,46 +1,38 @@
-class DecisionAgent:
-    def decide(self, price: float, sma: float, rsi: float, news: dict=None):
-        reasons = []
+from app.services.technical_indicators import calculate_indicators, generate_trading_signal
+from app.services.oanda_service import OandaService
+from typing import Dict, List, Any
 
-        # --- Indicator interpretation ---
-        if price > sma:
-            reasons.append("Price above SMA (uptrend)")
-        else:
-            reasons.append("Price below SMA (downtrend)")
+def make_trading_decision(pair: str, timeframe: str = "H1"):
+    """Make trading decision for a specific pair"""
+    oanda = OandaService()
+    
+    # Get data
+    candles = oanda.get_historical_data(pair, granularity=timeframe, count=100)
+    
+    # Calculate indicators
+    indicators = calculate_indicators(candles)
+    
+    # Generate signal
+    signal = generate_trading_signal(indicators)
+    
+    return {
+        "pair": pair,
+        "action": signal['signal'],
+        "confidence": signal['confidence'],
+        "entry_price": indicators['current_price'],
+        "stop_loss": calculate_stop_loss(indicators),
+        "take_profit": calculate_take_profit(indicators),
+        "indicators": indicators
+    }
 
-        if rsi < 35:
-            reasons.append("RSI oversold")
-        elif rsi > 65:
-            reasons.append("RSI overbought")
+def calculate_stop_loss(indicators: Dict) -> float:
+    """Calculate stop loss based on ATR"""
+    atr = indicators['atr']
+    current_price = indicators['current_price']
+    return round(current_price - (2 * atr), 5)  # 2x ATR
 
-        # --- Base technical decision ---
-        if price > sma and rsi < 40:
-            action = "Buy"
-        elif price < sma and rsi > 60:
-            action = "Sell"
-        elif abs(price - sma) / sma < 0.01:
-            action = "Wait"
-        else:
-            action = "Hold"
-
-        # --- NEWS RISK OVERRIDE (IMPORTANT PART) ---
-        if news:
-            if news["sentiment"] == "Bearish" and news["confidence"] > 0.6:
-                return {
-                    "action": "Wait",
-                    "override": "Negative news sentiment",
-                    "reasons": reasons + ["High-confidence bearish news"]
-                }
-
-            if news["sentiment"] == "Bullish" and news["confidence"] > 0.6 and action == "Sell":
-                return {
-                    "action": "Hold",
-                    "override": "Positive news sentiment",
-                    "reasons": reasons + ["High-confidence bullish news"]
-                }
-
-        # --- Final decision ---
-        return {
-            "action": action,
-            "reasons": reasons
-        }
+def calculate_take_profit(indicators: Dict) -> float:
+    """Calculate take profit based on ATR"""
+    atr = indicators['atr']
+    current_price = indicators['current_price']
+    return round(current_price + (3 * atr), 5)  # 3x ATR (1.5 risk-reward)

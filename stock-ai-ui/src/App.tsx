@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { analyzeStock } from "./api";
-import PriceChart from "./components/PriceChart";
-import Stats from "./components/Stats";
+import { analyzeStock } from "@/lib/api";
 
 function App() {
   const [data, setData] = useState(null);
@@ -13,11 +11,11 @@ function App() {
 
   if (!data) return <p>Loading...</p>;
 
-  const tradeMarkers = data.backtest.trades.map(t => ({
-    date: t.exit_date,
-    price: t.exit_price,
-    pnl: t.pnl
-  }));
+  // const tradeMarkers = data.backtest.trades.map(t => ({
+  //   date: t.exit_date,
+  //   price: t.exit_price,
+  //   pnl: t.pnl
+  // }));
 
   return (
     <div style={{ padding: 20 }}>
@@ -28,15 +26,15 @@ function App() {
         style={{ padding: 8, fontSize: 16 }}
       />
 
-      <h2>{data.symbol}</h2>
-      <h3>Decision: {data.decision.action}</h3>
+      {/* <h2>{data.symbol}</h2>
+      <h3>Decision: {data.decision.action}</h3> */}
 
-      <PriceChart
+      {/* <PriceChart
         prices={data.chart_data}
         trades={tradeMarkers}
-      />
+      /> */}
 
-      <Stats stats={data.trade_statistics} />
+      {/* <Stats stats={data.trade_statistics} /> */}
     </div>
   );
 }
