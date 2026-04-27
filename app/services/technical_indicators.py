@@ -3,7 +3,7 @@ import numpy as np
 from ta.trend import MACD, EMAIndicator, SMAIndicator
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volatility import BollingerBands, AverageTrueRange
-from typing import List, Dict
+from typing import Any, Dict, List, Tuple
 
 def calculate_indicators(candles: List[Dict]) -> Dict:
     """
@@ -173,3 +173,143 @@ def generate_trading_signal(indicators: Dict) -> Dict:
             "reasons": ["Mixed signals"],
             "strength": 0
         }
+
+
+def _to_ohlc_dataframe(candles: Any) -> pd.DataFrame:
+    """
+    Normalize candles into a dataframe with open/high/low/close columns.
+    Accepts:
+    - pandas DataFrame with OHLC columns (any case)
+    - list of dict candles with close/high/low/open keys
+    - list of dict candles with OANDA 'mid' object
+    """
+    if isinstance(candles, pd.DataFrame):
+        df = candles.copy()
+        renamed = {}
+        for c in df.columns:
+            lc = str(c).lower()
+            if lc == "close":
+                renamed[c] = "close"
+            elif lc == "open":
+                renamed[c] = "open"
+            elif lc == "high":
+                renamed[c] = "high"
+            elif lc == "low":
+                renamed[c] = "low"
+        if renamed:
+            df = df.rename(columns=renamed)
+        return df
+
+    if isinstance(candles, list) and candles:
+        df = pd.DataFrame(candles)
+        if "mid" in df.columns:
+            df["open"] = df["mid"].apply(lambda x: float(x["o"]))
+            df["high"] = df["mid"].apply(lambda x: float(x["h"]))
+            df["low"] = df["mid"].apply(lambda x: float(x["l"]))
+            df["close"] = df["mid"].apply(lambda x: float(x["c"]))
+            return df
+
+        lower_cols = {str(c).lower(): c for c in df.columns}
+        out = pd.DataFrame()
+        for name in ("open", "high", "low", "close"):
+            if name in lower_cols:
+                out[name] = pd.to_numeric(df[lower_cols[name]], errors="coerce")
+        return out
+
+    return pd.DataFrame()
+
+
+def compute_ema_series(candles: Any, period: int) -> Dict[str, Any]:
+    df = _to_ohlc_dataframe(candles)
+    if df.empty or "close" not in df.columns or len(df) < period:
+        return {"status": "insufficient_data", "period": period, "value": None}
+    ema = EMAIndicator(close=df["close"], window=period).ema_indicator().iloc[-1]
+    return {"status": "ok", "period": period, "value": float(ema)}
+
+
+def compute_rsi_series(candles: Any, period: int = 2) -> Dict[str, Any]:
+    df = _to_ohlc_dataframe(candles)
+    if df.empty or "close" not in df.columns or len(df) < period + 1:
+        return {"status": "insufficient_data", "period": period, "value": None}
+    rsi = RSIIndicator(close=df["close"], window=period).rsi().iloc[-1]
+    return {"status": "ok", "period": period, "value": float(rsi)}
+
+
+def compute_supertrend(candles: Any, period: int = 10, multiplier: float = 3.0) -> Dict[str, Any]:
+    """
+    Safe/simple Supertrend helper.
+    Returns trend in {'up','down'} when enough data is present.
+    """
+    df = _to_ohlc_dataframe(candles)
+    needed = max(period + 2, 20)
+    if df.empty or not {"high", "low", "close"}.issubset(df.columns) or len(df) < needed:
+        return {"status": "insufficient_data", "trend": None, "value": None}
+
+    atr = AverageTrueRange(
+        high=df["high"], low=df["low"], close=df["close"], window=period
+    ).average_true_range()
+    hl2 = (df["high"] + df["low"]) / 2.0
+    upper_band = hl2 + multiplier * atr
+    lower_band = hl2 - multiplier * atr
+
+    final_upper = upper_band.copy()
+    final_lower = lower_band.copy()
+    direction = [True] * len(df)  # True => uptrend
+
+    for i in range(1, len(df)):
+        final_upper.iloc[i] = (
+            upper_band.iloc[i]
+            if (upper_band.iloc[i] < final_upper.iloc[i - 1] or df["close"].iloc[i - 1] > final_upper.iloc[i - 1])
+            else final_upper.iloc[i - 1]
+        )
+        final_lower.iloc[i] = (
+            lower_band.iloc[i]
+            if (lower_band.iloc[i] > final_lower.iloc[i - 1] or df["close"].iloc[i - 1] < final_lower.iloc[i - 1])
+            else final_lower.iloc[i - 1]
+        )
+
+        if direction[i - 1]:
+            direction[i] = df["close"].iloc[i] > final_upper.iloc[i]
+        else:
+            direction[i] = df["close"].iloc[i] >= final_lower.iloc[i]
+
+    last_idx = len(df) - 1
+    st_value = final_lower.iloc[last_idx] if direction[last_idx] else final_upper.iloc[last_idx]
+    return {
+        "status": "ok",
+        "trend": "up" if direction[last_idx] else "down",
+        "value": float(st_value),
+    }
+
+
+def build_paper_signal_snapshot(candles: Any) -> Tuple[str, Dict[str, Any]]:
+    """
+    Build signal snapshot for paper trading strategies.
+    Returns tuple: (status, snapshot_dict)
+    status in {'ok','insufficient_data'}.
+    """
+    df = _to_ohlc_dataframe(candles)
+    if df.empty or "close" not in df.columns:
+        return "insufficient_data", {"reason": "missing_close_data"}
+
+    ema50 = compute_ema_series(df, 50)
+    ema200 = compute_ema_series(df, 200)
+    rsi2 = compute_rsi_series(df, 2)
+    st = compute_supertrend(df, period=10, multiplier=3.0)
+
+    if any(x.get("status") != "ok" for x in (ema50, ema200, rsi2)):
+        return "insufficient_data", {
+            "ema50": ema50,
+            "ema200": ema200,
+            "rsi2": rsi2,
+            "supertrend": st,
+        }
+
+    snapshot = {
+        "close": float(df["close"].iloc[-1]),
+        "ema50": float(ema50["value"]),
+        "ema200": float(ema200["value"]),
+        "rsi2": float(rsi2["value"]),
+        "supertrend": st,
+    }
+    return "ok", snapshot

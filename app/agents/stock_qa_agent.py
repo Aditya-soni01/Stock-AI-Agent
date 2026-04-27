@@ -7,21 +7,25 @@ from app.tools.market_data import fetch_price
 from app.agents.indicator_agent import IndicatorAgent
 from app.agents.market_agent import MarketAgent
 
-# Reuse OpenAI client configuration (OpenRouter)
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENAI_API_KEY
-)
-
-
 class StockQAAgent:
     """AI agent for answering stock-related questions with auto-fetching"""
     
     def __init__(self):
-        self.client = client
+        self.client = None
         self.model = MODEL_NAME
         self.market_agent = MarketAgent()
         self.indicator_agent = IndicatorAgent()
+
+    def _get_client(self):
+        if self.client:
+            return self.client
+        if not OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY is required to answer stock questions.")
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=OPENAI_API_KEY
+        )
+        return self.client
     
     def _fetch_stock_data(self, symbol: str) -> Optional[Dict]:
         """
@@ -274,7 +278,7 @@ Risk Note: [Short professional disclaimer, 1-2 sentences]
         system_msg, user_msg = self._build_prompt(question, intent, stock_data)
         
         try:
-            response = self.client.chat.completions.create(
+            response = self._get_client().chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_msg},

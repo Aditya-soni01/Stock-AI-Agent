@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Eye } from "lucide-react";
+
 import {
   Table,
   TableBody,
@@ -8,175 +8,112 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import type { PaperTrade, PaperTradesResponse } from "@/lib/api";
 
-const watchlistData = [
-  {
-    symbol: "RELIANCE",
-    trend: "Bullish",
-    signal: "BUY",
-    confidence: 87,
-    timeframe: "15m",
-    lastUpdated: "2 min ago",
-  },
-  {
-    symbol: "TCS",
-    trend: "Bearish",
-    signal: "SELL",
-    confidence: 72,
-    timeframe: "1h",
-    lastUpdated: "5 min ago",
-  },
-  {
-    symbol: "HDFC BANK",
-    trend: "Range",
-    signal: "WAIT",
-    confidence: 65,
-    timeframe: "15m",
-    lastUpdated: "1 min ago",
-  },
-  {
-    symbol: "INFY",
-    trend: "Bullish",
-    signal: "BUY",
-    confidence: 81,
-    timeframe: "Daily",
-    lastUpdated: "10 min ago",
-  },
-  {
-    symbol: "ICICI BANK",
-    trend: "Bullish",
-    signal: "BUY",
-    confidence: 79,
-    timeframe: "15m",
-    lastUpdated: "3 min ago",
-  },
-  {
-    symbol: "BHARTI AIRTEL",
-    trend: "Bearish",
-    signal: "SELL",
-    confidence: 68,
-    timeframe: "1h",
-    lastUpdated: "7 min ago",
-  },
-];
+interface WatchlistTableProps {
+  trades: PaperTradesResponse | null;
+  isLoading: boolean;
+}
 
-const getTrendIcon = (trend: string) => {
-  switch (trend) {
-    case "Bullish":
-      return <TrendingUp className="h-4 w-4 text-bullish" />;
-    case "Bearish":
-      return <TrendingDown className="h-4 w-4 text-bearish" />;
-    default:
-      return <Minus className="h-4 w-4 text-caution" />;
-  }
-};
+function formatInr(value: number | null | undefined): string {
+  if (typeof value !== "number") return "--";
+  return `INR ${value.toFixed(2)}`;
+}
 
-const getSignalBadge = (signal: string) => {
-  switch (signal) {
-    case "BUY":
-      return (
-        <Badge className="bg-bullish/20 text-bullish hover:bg-bullish/30 font-semibold">
-          BUY
-        </Badge>
-      );
-    case "SELL":
-      return (
-        <Badge className="bg-bearish/20 text-bearish hover:bg-bearish/30 font-semibold">
-          SELL
-        </Badge>
-      );
-    default:
-      return (
-        <Badge className="bg-caution/20 text-caution hover:bg-caution/30 font-semibold">
-          WAIT
-        </Badge>
-      );
-  }
-};
+function formatWhen(value: string | null | undefined): string {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
 
-const getConfidenceColor = (confidence: number) => {
-  if (confidence >= 80) return "text-bullish";
-  if (confidence >= 70) return "text-caution";
-  return "text-muted-foreground";
-};
+function sortTrades(trades: PaperTrade[]): PaperTrade[] {
+  return [...trades].sort((a, b) => {
+    const ta = new Date(a.entry_time ?? 0).getTime();
+    const tb = new Date(b.entry_time ?? 0).getTime();
+    return tb - ta;
+  });
+}
 
-export function WatchlistTable() {
+export function WatchlistTable({ trades, isLoading }: WatchlistTableProps) {
+  const rows = sortTrades(trades?.trades ?? []);
+
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
-          <Eye className="h-5 w-5 text-ai-insight" />
-          Watchlist & Signals
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="text-muted-foreground text-xs font-medium">
-                  Symbol
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium">
-                  Trend
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium">
-                  Signal
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium">
-                  Confidence
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium">
-                  Timeframe
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium text-right">
-                  Updated
-                </TableHead>
+    <section className="glass-card overflow-hidden">
+      <div className="flex items-center justify-between border-b border-[#1a2e1a] px-5 py-4">
+        <h3 className="flex items-center gap-2 text-2xl font-medium text-white">
+          <Eye className="h-4 w-4 text-[#00ff88]" />
+          Live Trade Log
+        </h3>
+        <span className="text-xs text-[#8fa98f]">Updated from API polling</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-[#1a2e1a] bg-[#050a05] hover:bg-[#050a05]">
+              <TableHead className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">Instrument</TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">Type</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">Entry</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">Current/Exit</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">PnL</TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.1em] text-[#8fa98f]">Updated</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow className="border-[#1a2e1a]">
+                <TableCell colSpan={6} className="text-[#8fa98f]">
+                  Loading trade log...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {watchlistData.map((item) => (
-                <TableRow
-                  key={item.symbol}
-                  className="border-border cursor-pointer transition-colors hover:bg-secondary/50"
-                >
-                  <TableCell className="font-medium text-foreground">
-                    {item.symbol}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5">
-                      {getTrendIcon(item.trend)}
-                      <span className="text-sm text-muted-foreground">
-                        {item.trend}
+            )}
+
+            {!isLoading && rows.length === 0 && (
+              <TableRow className="border-[#1a2e1a]">
+                <TableCell colSpan={6} className="text-[#8fa98f]">
+                  No paper trades yet.
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!isLoading &&
+              rows.map((trade) => {
+                const pnl = trade.pnl ?? 0;
+                const directionHint = `${trade.reason ?? ""} ${trade.strategy_name ?? ""}`.toLowerCase();
+                const type = directionHint.includes("short") || directionHint.includes("sell")
+                  ? "SHORT"
+                  : directionHint.includes("long") || directionHint.includes("buy")
+                    ? "LONG"
+                    : "--";
+                return (
+                  <TableRow key={trade.trade_id ?? `${trade.symbol}-${trade.entry_time}`} className="border-[#1a2e1a] hover:bg-[#0b150b]">
+                    <TableCell className="font-medium text-white">{trade.symbol ?? "--"}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${
+                          type === "SHORT"
+                            ? "border-[#ff5f5f] bg-[#ff5f5f]/10 text-[#ff9f9f]"
+                            : type === "LONG"
+                              ? "border-[#00ff88] bg-[#00ff88]/10 text-[#8dffbf]"
+                              : "border-[#1a2e1a] bg-[#0b120b] text-[#8fa98f]"
+                        }`}
+                      >
+                        {type}
                       </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getSignalBadge(item.signal)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`font-medium ${getConfidenceColor(item.confidence)}`}
-                    >
-                      {item.confidence}%
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className="border-border text-muted-foreground font-normal"
-                    >
-                      {item.timeframe}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-right text-sm">
-                    {item.lastUpdated}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                    </TableCell>
+                    <TableCell className="text-right text-white">{formatInr(trade.entry_price)}</TableCell>
+                    <TableCell className="text-right text-white">{formatInr(trade.exit_price ?? trade.entry_price)}</TableCell>
+                    <TableCell className={`text-right font-semibold ${pnl >= 0 ? "text-[#00ff88]" : "text-[#ff6f6f]"}`}>
+                      {formatInr(trade.pnl)}
+                    </TableCell>
+                    <TableCell className="text-right text-[#8fa98f]">{formatWhen(trade.exit_time ?? trade.entry_time)}</TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </div>
+    </section>
   );
 }

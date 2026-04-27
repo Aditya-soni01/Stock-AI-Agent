@@ -4,29 +4,83 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --border: 214.3 31.8% 91.4%;
-    --primary: 222.2 47.4% 11.2%;
-    --radius: 0.5rem;
+    --background: 120 25% 3%;
+    --foreground: 120 18% 89%;
+    --card: 128 28% 5%;
+    --card-foreground: 120 18% 89%;
+    --primary: 152 100% 50%;
+    --primary-foreground: 120 25% 3%;
+    --secondary: 125 35% 10%;
+    --secondary-foreground: 120 18% 89%;
+    --muted: 125 18% 12%;
+    --muted-foreground: 120 10% 61%;
+    --accent: 125 35% 10%;
+    --accent-foreground: 120 18% 89%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 130 36% 14%;
+    --input: 130 36% 14%;
+    --ring: 152 100% 50%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --primary: 210 40% 98%;
+    --background: 120 25% 3%;
+    --foreground: 120 18% 89%;
+    --card: 128 28% 5%;
+    --card-foreground: 120 18% 89%;
+    --primary: 152 100% 50%;
+    --primary-foreground: 120 25% 3%;
+    --secondary: 125 35% 10%;
+    --secondary-foreground: 120 18% 89%;
+    --muted: 125 18% 12%;
+    --muted-foreground: 120 10% 61%;
+    --accent: 125 35% 10%;
+    --accent-foreground: 120 18% 89%;
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 130 36% 14%;
+    --input: 130 36% 14%;
+    --ring: 152 100% 50%;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: Inter, sans-serif;
+    font-variant-numeric: tabular-nums;
+    background-image: radial-gradient(circle at 15% 0%, rgba(0, 255, 136, 0.06), transparent 35%),
+      radial-gradient(circle at 100% 10%, rgba(0, 255, 136, 0.05), transparent 30%);
   }
 
   * {
     @apply border-border;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-[#1a2e1a] bg-[#0a0f0a]/90 backdrop-blur-xl;
+    box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.02);
+  }
+
+  .glass-card-hover {
+    @apply transition-all duration-200;
+  }
+
+  .glass-card-hover:hover {
+    border-color: #00ff88;
+    box-shadow: 0 0 18px rgba(0, 255, 136, 0.08), inset 0 0 14px rgba(0, 255, 136, 0.08);
+  }
+
+  .terminal-pill {
+    @apply rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em];
+  }
+
+  .text-positive {
+    @apply text-[#00ff88];
+  }
+
+  .text-negative {
+    @apply text-[#ff5f5f];
   }
 }

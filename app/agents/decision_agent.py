@@ -1,38 +1,24 @@
-from app.services.technical_indicators import calculate_indicators, generate_trading_signal
-from app.services.oanda_service import OandaService
-from typing import Dict, List, Any
+# app/agents/decision_agent.py
 
-def make_trading_decision(pair: str, timeframe: str = "H1"):
-    """Make trading decision for a specific pair"""
-    oanda = OandaService()
-    
-    # Get data
-    candles = oanda.get_historical_data(pair, granularity=timeframe, count=100)
-    
-    # Calculate indicators
-    indicators = calculate_indicators(candles)
-    
-    # Generate signal
-    signal = generate_trading_signal(indicators)
-    
-    return {
-        "pair": pair,
-        "action": signal['signal'],
-        "confidence": signal['confidence'],
-        "entry_price": indicators['current_price'],
-        "stop_loss": calculate_stop_loss(indicators),
-        "take_profit": calculate_take_profit(indicators),
-        "indicators": indicators
-    }
+from app.core.config import settings
 
-def calculate_stop_loss(indicators: Dict) -> float:
-    """Calculate stop loss based on ATR"""
-    atr = indicators['atr']
-    current_price = indicators['current_price']
-    return round(current_price - (2 * atr), 5)  # 2x ATR
+class DecisionAgent:
+    def __init__(self):
+        # Only import OANDA if configured
+        if settings.OANDA_API_KEY and settings.OANDA_ACCOUNT_ID:
+            from app.services.oanda_service import OandaService
+            self.oanda = OandaService()
+        else:
+            self.oanda = None
+            print("⚠️  OANDA not configured - forex trading disabled")
 
-def calculate_take_profit(indicators: Dict) -> float:
-    """Calculate take profit based on ATR"""
-    atr = indicators['atr']
-    current_price = indicators['current_price']
-    return round(current_price + (3 * atr), 5)  # 3x ATR (1.5 risk-reward)
+    def analyze_forex(self, pair: str):
+        if not self.oanda:
+            return {"error": "OANDA not configured"}
+
+        # Your forex analysis logic
+        pass
+
+    def analyze_stock(self, symbol: str):
+        # Your stock analysis logic (using other services)
+        pass
