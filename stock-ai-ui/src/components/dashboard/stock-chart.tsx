@@ -1,226 +1,76 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ReferenceLine,
-} from "recharts";
+import { BarChart3, CheckCircle2 } from "lucide-react";
 
-const indicators = ["EMA", "SMA", "RSI", "MACD", "VWAP"];
+import type { FeedStatusResponse, LivePriceResponse } from "@/lib/api";
 
-// Generate realistic candlestick data
-const generateChartData = () => {
-  const data = [];
-  let basePrice = 2450;
-  const times = [
-    "9:15",
-    "9:30",
-    "9:45",
-    "10:00",
-    "10:15",
-    "10:30",
-    "10:45",
-    "11:00",
-    "11:15",
-    "11:30",
-    "11:45",
-    "12:00",
-    "12:15",
-    "12:30",
-    "12:45",
-    "13:00",
-    "13:15",
-    "13:30",
-    "13:45",
-    "14:00",
-    "14:15",
-    "14:30",
-    "14:45",
-    "15:00",
-    "15:15",
-    "15:30",
-  ];
+interface StockChartProps {
+  livePrice: LivePriceResponse | null;
+  feedStatus: FeedStatusResponse | null;
+  isLoading: boolean;
+}
 
-  for (let i = 0; i < times.length; i++) {
-    const volatility = Math.random() * 30 - 15;
-    const open = basePrice;
-    const close = basePrice + volatility + (Math.random() > 0.4 ? 5 : -3);
-    const high = Math.max(open, close) + Math.random() * 10;
-    const low = Math.min(open, close) - Math.random() * 10;
-    const volume = Math.floor(Math.random() * 500000 + 100000);
-    const ema = basePrice + Math.sin(i / 3) * 15;
-
-    data.push({
-      time: times[i],
-      open,
-      close,
-      high,
-      low,
-      volume,
-      ema,
-      candleColor: close > open ? "bullish" : "bearish",
-    });
-
-    basePrice = close;
+function formatPrice(
+  livePrice: LivePriceResponse | null,
+  feedStatus: FeedStatusResponse | null,
+  isLoading: boolean,
+): string {
+  if (isLoading) return "loading...";
+  if (livePrice?.status === "live" && typeof livePrice.ltp === "number") {
+    return `INR ${livePrice.ltp.toFixed(2)}`;
   }
-  return data;
-};
+  if (!feedStatus) return "Loading...";
+  if (!feedStatus.token.ready) return "Connect Upstox";
+  if (!feedStatus.running) return "Feed stopped";
+  return "Waiting for live tick";
+}
 
-const chartData = generateChartData();
+function statusLabel(livePrice: LivePriceResponse | null, feedStatus: FeedStatusResponse | null, isLoading: boolean): string {
+  if (isLoading) return "loading";
+  if (livePrice?.status === "live") return "Live";
+  if (!feedStatus) return "Loading...";
+  if (!feedStatus.token.ready) return "Connect Upstox";
+  if (!feedStatus.running) return "Feed stopped";
+  return "Waiting for live tick";
+}
 
-export function StockChart() {
-  const [activeIndicators, setActiveIndicators] = useState<string[]>(["EMA"]);
-
-  const toggleIndicator = (indicator: string) => {
-    setActiveIndicators((prev) =>
-      prev.includes(indicator)
-        ? prev.filter((i) => i !== indicator)
-        : [...prev, indicator],
-    );
-  };
+export function StockChart({ livePrice, feedStatus, isLoading }: StockChartProps) {
+  const price = formatPrice(livePrice, feedStatus, isLoading);
+  const status = statusLabel(livePrice, feedStatus, isLoading);
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+    <section className="glass-card p-5 md:p-6">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <CardTitle className="text-lg font-semibold text-foreground">
-            RELIANCE
-          </CardTitle>
-          <div className="mt-1 flex items-center gap-3">
-            <span className="text-2xl font-bold text-foreground">
-              ₹2,456.80
-            </span>
-            <span className="rounded bg-bullish/20 px-2 py-0.5 text-sm font-medium text-bullish">
-              +2.34%
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-5xl font-semibold tracking-tight text-white">NIFTY50</h2>
+            <CheckCircle2 className="h-4 w-4 text-[#00ff88]" />
+          </div>
+          <div className="flex items-baseline gap-3">
+            <span className="text-4xl font-black text-white md:text-6xl">{price}</span>
+            <span className="rounded-md border border-[#1a2e1a] bg-[#111d11] px-2 py-1 text-xs font-medium text-[#8fa98f]">
+              {status}
             </span>
           </div>
         </div>
-        <div className="flex gap-1">
-          {indicators.map((indicator) => (
-            <Button
-              key={indicator}
-              variant={
-                activeIndicators.includes(indicator) ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() => toggleIndicator(indicator)}
-              className={
-                activeIndicators.includes(indicator)
-                  ? "h-7 bg-ai-insight text-white hover:bg-ai-insight/90"
-                  : "h-7 border-border text-muted-foreground hover:bg-secondary"
-              }
-            >
-              {indicator}
-            </Button>
-          ))}
+        <div className="flex gap-2">
+          <button type="button" className="rounded-lg border border-[#1a2e1a] bg-[#1a2e1a] px-3 py-1 text-sm text-white">
+            Indicator
+          </button>
+          <button type="button" className="rounded-lg border border-[#1a2e1a] bg-[#1a2e1a] px-3 py-1 text-sm text-white">
+            Compare
+          </button>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-                opacity={0.5}
-              />
-              <XAxis
-                dataKey="time"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                axisLine={{ stroke: "hsl(var(--border))" }}
-                tickLine={{ stroke: "hsl(var(--border))" }}
-              />
-              <YAxis
-                yAxisId="price"
-                domain={["dataMin - 20", "dataMax + 20"]}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                axisLine={{ stroke: "hsl(var(--border))" }}
-                tickLine={{ stroke: "hsl(var(--border))" }}
-              />
-              <YAxis
-                yAxisId="volume"
-                orientation="right"
-                domain={[0, "dataMax"]}
-                tick={false}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                  color: "hsl(var(--foreground))",
-                }}
-                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
-              />
+      </div>
 
-              {/* Support and Resistance lines */}
-              <ReferenceLine
-                y={2480}
-                stroke="hsl(var(--bearish))"
-                strokeDasharray="5 5"
-                label={{
-                  value: "Resistance",
-                  fill: "hsl(var(--bearish))",
-                  fontSize: 10,
-                }}
-              />
-              <ReferenceLine
-                y={2420}
-                stroke="hsl(var(--bullish))"
-                strokeDasharray="5 5"
-                label={{
-                  value: "Support",
-                  fill: "hsl(var(--bullish))",
-                  fontSize: 10,
-                }}
-              />
-
-              {/* Volume bars at bottom */}
-              <Bar
-                dataKey="volume"
-                fill="hsl(var(--muted))"
-                opacity={0.3}
-                yAxisId="volume"
-              />
-
-              {/* Price line */}
-              <Line
-                type="monotone"
-                dataKey="close"
-                stroke="hsl(var(--ai-insight))"
-                strokeWidth={2}
-                dot={false}
-                yAxisId="price"
-              />
-
-              {/* EMA line if active */}
-              {activeIndicators.includes("EMA") && (
-                <Line
-                  type="monotone"
-                  dataKey="ema"
-                  stroke="hsl(var(--caution))"
-                  strokeWidth={1.5}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  yAxisId="price"
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
+      <div className="relative flex h-[440px] items-center justify-center overflow-hidden rounded-xl border border-[#1a2e1a] bg-[#050b05]">
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#1a2e1a_1px,transparent_1px),linear-gradient(to_bottom,#1a2e1a_1px,transparent_1px)] bg-[size:16.6%_25%]" />
+        <div className="relative z-10 rounded-xl border border-dashed border-[#294729] bg-[#0a150a]/70 px-5 py-4 text-center">
+          <BarChart3 className="mx-auto mb-2 h-7 w-7 text-[#8fa98f]" />
+          <p className="text-sm font-semibold text-white">Live Chart Wiring Pending</p>
+          <p className="mt-1 text-xs text-[#8fa98f]">
+            Price and status above are real API values. Chart candles are intentionally not fabricated.
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

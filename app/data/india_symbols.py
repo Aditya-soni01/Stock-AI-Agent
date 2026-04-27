@@ -8,3 +8,16 @@ BANKNIFTY = [
     "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS",
     "AXISBANK.NS", "KOTAKBANK.NS"
 ]
+
+# Index symbols used by live-price and scanner paths.
+NIFTY = "NIFTY"
+NIFTY50 = "NIFTY50"
+BANKNIFTY_INDEX = "BANKNIFTY"
+SENSEX = "SENSEX"
+
+INDIA_INDEX_SYMBOLS = [
+    NIFTY,
+    NIFTY50,
+    BANKNIFTY_INDEX,
+    SENSEX,
+]

@@ -1,99 +1,78 @@
-import { cn } from "@/lib/utils"
 import {
+  Activity,
+  BrainCircuit,
+  HelpCircle,
   LayoutDashboard,
-  TrendingUp,
-  Brain,
-  Signal,
-  Briefcase,
-  History,
-  Star,
-  Bell,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
-import { useState } from "react"
+  LineChart,
+  LogOut,
+  WalletCards,
+} from "lucide-react";
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "#", active: true },
-  { icon: TrendingUp, label: "Market Overview", href: "#" },
-  { icon: Brain, label: "AI Stock Analyzer", href: "#" },
-  { icon: Signal, label: "Trade Signals", href: "#" },
-  { icon: Briefcase, label: "Portfolio Simulator", href: "#" },
-  { icon: History, label: "Backtesting", href: "#" },
-  { icon: Star, label: "Watchlist", href: "#" },
-  { icon: Bell, label: "Alerts", href: "#" },
-]
+  { icon: LayoutDashboard, label: "Dashboard", active: true },
+  { icon: LineChart, label: "Markets", active: false },
+  { icon: Activity, label: "Strategy", active: false },
+  { icon: WalletCards, label: "Portfolio", active: false },
+  { icon: BrainCircuit, label: "AI Insights", active: false },
+];
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
-
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300",
-        collapsed ? "w-16" : "w-56"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-border px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-ai-insight">
-              <Brain className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-semibold text-sidebar-foreground">StockAI</span>
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-[#1a2e1a] bg-[#040904] shadow-[4px_0_24px_rgba(0,0,0,0.45)] md:flex">
+      <div className="border-b border-[#1a2e1a] px-6 py-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#00ff88] bg-[#0d1a0d]">
+            <BrainCircuit className="h-5 w-5 text-[#00ff88]" />
           </div>
-        )}
-        {collapsed && (
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-ai-insight">
-            <Brain className="h-5 w-5 text-white" />
+          <div>
+            <h2 className="text-2xl font-bold leading-none text-[#00ff88]">StockAI</h2>
+            <p className="mt-1 text-[10px] uppercase tracking-[0.22em] text-[#8fa98f]">Terminal v2.4</p>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-1 px-0 py-4">
         {navItems.map((item) => (
-          <a
+          <button
             key={item.label}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+            type="button"
+            className={`group flex w-full items-center gap-3 px-6 py-3 text-left text-xs font-semibold uppercase tracking-[0.16em] transition-all ${
               item.active
-                ? "bg-sidebar-accent text-ai-insight"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            )}
+                ? "border-l-[3px] border-[#00ff88] bg-[#0d1a0d] text-[#00ff88] shadow-[inset_0_0_12px_rgba(0,255,136,0.16)]"
+                : "text-[#8fa98f] hover:bg-[#0d1a0d] hover:text-[#00ff88]"
+            }`}
           >
-            <item.icon className="h-5 w-5 shrink-0" />
-            {!collapsed && <span>{item.label}</span>}
-          </a>
+            <item.icon className="h-4 w-4 shrink-0" />
+            <span>{item.label}</span>
+          </button>
         ))}
       </nav>
 
-      {/* Settings at bottom */}
-      <div className="border-t border-border p-2">
-        <a
-          href="#"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      <div className="space-y-4 px-5 pb-6">
+        <button
+          type="button"
+          className="h-14 w-full rounded-2xl bg-[#00ff88] text-lg font-bold tracking-wide text-black transition-transform hover:scale-[1.01]"
         >
-          <Settings className="h-5 w-5 shrink-0" />
-          {!collapsed && <span>Settings</span>}
-        </a>
-      </div>
+          New Trade
+        </button>
 
-      {/* Collapse toggle */}
-      <button
-        type="button"
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        {collapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </button>
+        <div className="space-y-1">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8fa98f] transition-colors hover:text-[#00ff88]"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Support
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8fa98f] transition-colors hover:text-[#ff7a7a]"
+          >
+            <LogOut className="h-4 w-4" />
+            Log Out
+          </button>
+        </div>
+      </div>
     </aside>
-  )
+  );
 }

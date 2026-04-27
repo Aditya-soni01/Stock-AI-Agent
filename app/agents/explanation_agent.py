@@ -1,12 +1,15 @@
 from openai import OpenAI
 from app.config.settings import OPENAI_API_KEY, MODEL_NAME
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=OPENAI_API_KEY
-)
-
 class ExplanationAgent:
+    def _get_client(self):
+        if not OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY is required to generate explanations.")
+        return OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=OPENAI_API_KEY
+        )
+
     def explain(self, symbol, price, indicators, decision):
         prompt = f"""
 You are a stock market mentor.
@@ -34,7 +37,7 @@ Explain:
 3. What would change the decision
 """
 
-        response = client.chat.completions.create(
+        response = self._get_client().chat.completions.create(
             model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
